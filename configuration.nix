@@ -42,7 +42,7 @@
     e2fsprogs xfsprogs btrfs-progs util-linux php
   ];
 
-  # Mounts
+  # Share Mounts
   fileSystems."/mnt/videoz" = {
     device = "192.168.1.51:/volume1/Video";  # ← change this if your NFS export path is different
     fsType = "nfs";
@@ -54,11 +54,12 @@
     fsType = "nfs";
     options = [ "noauto,x-systemd.automount,nofail,_netdev" ];
   };
-
+ 
+  ######################
   # Podman configuration
+  
   virtualisation.oci-containers.backend = "podman";
 
-  # Declarative OCI containers (Podman) – the modern way
   virtualisation.oci-containers.containers = {
     
     openspeedtest = {
@@ -76,9 +77,10 @@
       ];
       autoStart = true;
     };
-
-    # End of Podman containers
   };
+
+  ####### End podman config
+  #########################
 
   # VS Code Server
   # Needed to connect VS Code (duh)
@@ -90,7 +92,9 @@
     extraUpFlags = [ "--advertise-exit-node" "--advertise-routes=0.0.0.0/0,::/0" ];
   };
 
-  # Plex
+  ########################
+  ######### Plex #########
+
   services.plex = {
     enable = true;
     openFirewall = true;  # if you want remote access
@@ -109,6 +113,9 @@
     serviceConfig.StateDirectory = "plexmediaserver";
     serviceConfig.StateDirectoryMode = "0755";
   };
+
+  #### End Plex #################
+  ###############################
 
   # User account
   users.users.bigjoetx = {
