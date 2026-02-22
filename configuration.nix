@@ -40,6 +40,12 @@
   environment.systemPackages = with pkgs; [
     vim git wget curl tailscale cifs-utils parted cloud-utils
     e2fsprogs xfsprogs btrfs-progs util-linux php
+
+    (python3.withPackages (py: [
+      py.llm
+      py.llm-ollama
+    ]))
+
   ];
 
   # Share Mounts
@@ -54,11 +60,21 @@
     fsType = "nfs";
     options = [ "noauto,x-systemd.automount,nofail,_netdev" ];
   };
+
+    fileSystems."/mnt/musica" = {
+    device = "192.168.1.51:/volume1/music/MusicLibrary";  # ← change this if your NFS export path is different
+    fsType = "nfs";
+    options = [ "noauto,x-systemd.automount,nofail,_netdev" ];
+  };
  
   ######################
   # Podman configuration
   
-  virtualisation.oci-containers.backend = "podman";
+  virtualisation.podman = {
+    enable = true;
+    dockerCompat = true;  # For Portainer compatibility
+    defaultNetwork.settings.dns_enabled = true;
+  };
 
   virtualisation.oci-containers.containers = {
     
@@ -70,7 +86,7 @@
 
     portainer = {
       image = "portainer/portainer-ce:latest";
-      ports = [ "9000:9000" "8000:8000" ];
+      ports = [ "9000:9000" ];
       volumes = [
         "/var/lib/portainer:/data"
         "/run/podman/podman.sock:/var/run/docker.sock"
@@ -101,20 +117,41 @@
     # dataDir = "/var/lib/plex";  # default, but make sure it is persisted
   };
 
-  # Make sure the directory is owned correctly and survives reboots
-  systemd.tmpfiles.rules = [
-    "d /var/lib/plexmediaserver 0755 plex plex -"
-    "d /var/lib/plexmediaserver/Library 0755 plex plex -"
-    "d /var/lib/plexmediaserver/Library/Application\\ Support 0755 plex plex -"
-  ];
-
   # Very important: Plex needs the prefs file to be writable by the plex user
   systemd.services.plex = {
     serviceConfig.StateDirectory = "plexmediaserver";
     serviceConfig.StateDirectoryMode = "0755";
   };
 
+  # Make sure the directories are owned correctly and survive reboots
+  systemd.tmpfiles.rules = [
+    "d /var/lib/plexmediaserver 0755 plex plex -"
+    "d /var/lib/plexmediaserver/Library 0755 plex plex -"
+    "d /var/lib/plexmediaserver/Library/Application\\ Support 0755 plex plex -"
+    "d /var/www/share 2775 root users"  # this one is for filebrowser
+  ];
+
   #### End Plex #################
+  ###############################
+
+  ###############################
+  #### Ollama ###################
+
+  services.ollama = {
+    enable = true;
+    acceleration = "rocm";
+    environmentVariables = {
+      HSA_OVERRIDE_GFX_VERSION = "11.0.0";
+    };
+    host = "0.0.0.0";
+  };
+
+  services.open-webui = {
+    enable = true;
+    host = "0.0.0.0";
+  };
+
+  #### Ollama ###################
   ###############################
 
   # User account
@@ -137,14 +174,16 @@
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [
     22    # SSH
-    80    # FileBrowser
-    3000  # OpenSpeedTest
+    80    # Ollama
+    8000  # OpenSpeedTest
+    7860  # Ollama
     9000  # Portainer
-    8080  # (if you use it somewhere)
+    8080  # Filebrowser
     32400 # Plex
     32469 # Plex DLNA
     8324  # Plex
   ];
+
   networking.firewall.allowedUDPPorts = [
     1900 32410 32412 32413 32414 # Plex discovery
   ];
