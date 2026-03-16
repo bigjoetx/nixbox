@@ -68,34 +68,35 @@
   };
  
   ######################
-  # Podman configuration
-  
-  virtualisation.podman = {
+# Docker configuration
+
+  virtualisation.docker = {
     enable = true;
-    dockerCompat = true;  # For Portainer compatibility
-    defaultNetwork.settings.dns_enabled = true;
   };
 
-  virtualisation.oci-containers.containers = {
-    
-    openspeedtest = {
-      image = "openspeedtest/latest";
-      ports = [ "3000:3000" ];
-      autoStart = true;
-    };
+  virtualisation.oci-containers = {
+    backend = "docker";
+    containers = {
 
-    portainer = {
-      image = "portainer/portainer-ce:latest";
-      ports = [ "9000:9000" ];
-      volumes = [
-        "/var/lib/portainer:/data"
-        "/run/podman/podman.sock:/var/run/docker.sock"
-      ];
-      autoStart = true;
+      openspeedtest = {
+        image = "openspeedtest/latest";
+        ports = [ "3000:3000" ];
+        autoStart = true;
+      };
+
+      portainer = {
+        image = "portainer/portainer-ce:latest";
+        ports = [ "9000:9000" ];
+        volumes = [
+          "/var/lib/portainer:/data"
+          "/run/docker.sock:/var/run/docker.sock"
+        ];
+        autoStart = true;
+      };
     };
   };
 
-  ####### End podman config
+  ####### End Docker config
   #########################
 
   # VS Code Server
@@ -132,26 +133,6 @@
   ];
 
   #### End Plex #################
-  ###############################
-
-  ###############################
-  #### Ollama ###################
-
-  services.ollama = {
-    enable = true;
-    acceleration = "rocm";
-    environmentVariables = {
-      HSA_OVERRIDE_GFX_VERSION = "11.0.0";
-    };
-    host = "0.0.0.0";
-  };
-
-  services.open-webui = {
-    enable = true;
-    host = "0.0.0.0";
-  };
-
-  #### Ollama ###################
   ###############################
 
   # User account
